@@ -1,25 +1,62 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from 'react';
+import Container from 'react-bootstrap/Container'
 
-function App() {
+import { linkBig, linkSmall } from './constants'
+import Loader from './Loader'
+import SearchForm from './SearchForm'
+import Table from './Table'
+import AccountInfo from './AccountInfo'
+import Pagination from './Pagination'
+
+const App = () => {
+  const [data, setData] = useState(null)
+  const [accountId, setAccountId] = useState(null)
+  const [filteredData, setFilteredData] = useState([])
+  const [activePage, setActivePage] = useState(1)
+
+  const rowsPerPage = 50
+
+  useEffect(() => {
+    fetch(linkBig)
+      .then(response => response.json())
+      .then(data => {
+        setData(data)
+        setFilteredData(data)
+      })
+  }, [])
+
+  const handleSearchSubmit = (filter) => {
+    const lowFilter = filter.toLowerCase()
+
+    setFilteredData(data.filter((el) => {
+      for (const property in el) {
+        if (String(el[property]).toLowerCase().includes(lowFilter)) {
+          return true
+        }
+      }
+      return false
+    }))
+  }
+
+  if (!data) {
+    return <Loader />
+  }
+
+  const begin = (activePage - 1) * rowsPerPage
+  const paginatedData = filteredData.slice(begin, begin + rowsPerPage)
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Container>
+      <SearchForm handleSubmit={handleSearchSubmit} />
+      <Table data={paginatedData} onRowClick={(id) => setAccountId(id)} />
+      <Pagination
+        handleClick={(number) => setActivePage(number)}
+        numberEntities={filteredData.length}
+        active={activePage}
+        rowsPerPage={rowsPerPage}
+      />
+      {accountId && <AccountInfo data={paginatedData.find(el => el.id === accountId)} />}
+    </Container>
   );
 }
 
